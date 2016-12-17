@@ -34,28 +34,35 @@ for num in id_list:
 
     # result, data = mail.uid('fetch', uid, '(X-GM-THRID X-GM-MSGID)')
 
-    print "to=", email_message['To']
-    print "from=", email.utils.parseaddr(email_message['From'])  # for parsing "Yuji Tomita" <yuji@grovemade.com>
+    _to = email_message['To']
+    _from = email.utils.parseaddr(email_message['From'])
+
+    print "to=", _to
+    print "from=", _from  # for parsing "Yuji Tomita" <yuji@grovemade.com>
     hdr = email.header.make_header(email.header.decode_header(email_message['Subject']))
     subject = str(hdr)
+
     print "subject=", subject
     print "all headers=", email_message.items()  # print all headers
     print "\n"
 
-    conn = MySQLdb.connect(host= MYSQL_HOST,
-                      user=MYSQL_USERNAME,
-                      passwd=MYSQL_PASSWORD,
-                      db=MYSQL_DATABASENAME)
+    from testsql import Mail
 
-    cursor = conn.cursor()
+    m = Mail(
+        _subject = subject
+        ,_from = _from
+        ,_to = _to
+    )
 
-    try:
-       cursor.execute("""INSERT INTO mail VALUES (%s,%s)""", (188, 90))
-       conn.commit()
-    except:
-       conn.rollback()
 
-    conn.close()
+    from testsql import insert_mail
+
+    insert_mail(m)
+
+
+
+
+
 
 
 # note that if you want to get text content (body) and the email contains
@@ -69,5 +76,7 @@ for num in id_list:
 #                 return part.get_payload()
 #     elif maintype == 'text':
 #         return email_message_instance.get_payload()
+
+
 
 print "finished"

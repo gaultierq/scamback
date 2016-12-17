@@ -9,11 +9,6 @@ from sqlalchemy import Table, Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import relationship, backref
 
 
-# tags = Table('tag_image', Base.metadata,
-#              Column('tag_id', Integer, ForeignKey('tags.id')),
-#              Column('image_id', Integer, ForeignKey('images.id'))
-#              )
-
 class Mail(Base):
     __tablename__ = 'mail'
 
@@ -62,13 +57,8 @@ engine = create_engine(engine_name, echo=True)
 engine.execute("CREATE DATABASE IF NOT EXISTS %s" % (MYSQL_DATABASENAME)) #create db
 engine.execute("USE %s" % (MYSQL_DATABASENAME))
 
-# from sqlalchemy.schema import CreateTable
 
 Mail.__table__.create(engine, checkfirst=True)
-
-
-# print CreateTable(Mail)
-
 
 
 from sqlalchemy.orm import sessionmaker
@@ -76,6 +66,11 @@ from sqlalchemy.orm import sessionmaker
 Session = sessionmaker(bind=engine)
 
 session = Session()
+
+import logging
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
+
 
 
 def insert_mail(new_mail=None):
