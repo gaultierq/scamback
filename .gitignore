@@ -1,4 +1,4 @@
 env
 *.pyc
 .idea*
-migrations/versions
+migrations/**/*.py
