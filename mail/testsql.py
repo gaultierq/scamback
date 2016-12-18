@@ -125,7 +125,7 @@ class MailAccountType(Base):
 
 engine_name = 'mysql://%s:%s@%s/%s?%s' % (MYSQL_USERNAME, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_DATABASENAME, "charset=utf8")
 
-print "engine", engine_name
+print("engine", engine_name)
 
 engine = create_engine(engine_name, echo=True)
 engine.execute("CREATE DATABASE IF NOT EXISTS %s" % (MYSQL_DATABASENAME)) #create db
@@ -148,7 +148,7 @@ logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 
 def insert_mail(new_mail=None):
-    print "inserting a new mail"
+    print("inserting a new mail")
     session = Session()
 
     session.add(new_mail)
