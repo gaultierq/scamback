@@ -7,12 +7,25 @@
 <p>config.py ->> SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://samback:samback@localhost/samback’</p>
 
 
+<h4>Deployment</h4>
+virtualenv -p python3 scamback
+source scamback/bin/activate
+git clone https://github.com/gaultierq/scamback.git
+cd scamback
+pip install -r requirements.txt
+
+<h4>Server Config</h4>
+<p>Production: export APP_SETTINGS="config.ProductionConfig"</p>
+<p>Development: export APP_SETTINGS="config.DevelopmentConfig"</p>
+
 
 <h4>Database migrations:</h4>
 <p>python manage.py db init</p>
 <p>python manage.py db migrate</p>
 <p>python manage.py db upgrade</p>
 
+<h4>Run Server</h4>
+python app.py
 
 <h4>REST API</h4>
 1. POST
