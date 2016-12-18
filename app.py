@@ -1,4 +1,6 @@
 import os
+if not 'APP_SETTINGS' in os.environ:
+    os.environ['APP_SETTINGS'] = 'config.ProductionConfig'
 
 from flask import Flask,jsonify, abort, request
 app = Flask(__name__)
