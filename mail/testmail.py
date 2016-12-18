@@ -13,9 +13,8 @@ from database import DB
 if __name__ == '__main__':
     app.config.from_object(os.environ['APP_SETTINGS'])
     DB.init_db(app)
+    from models import Mail, insert_mail
 
-
-from models import Mail,insert_mail
 
 mail = imaplib.IMAP4_SSL('imap.gmail.com')
 mail.login(MAIL_USER, MAIL_PASSWORD)
