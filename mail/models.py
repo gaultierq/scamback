@@ -1,14 +1,10 @@
-from sqlalchemy import Column, Integer, UnicodeText,String, DateTime,ForeignKey
+from sqlalchemy import Column, Integer, UnicodeText, String, DateTime, ForeignKey
 from sqlalchemy_utils import EncryptedType
 from database import DB
 import datetime
 
 from datetime import datetime
-
-MYSQL_HOST = "localhost"
-MYSQL_DATABASENAME = "spamback"
-MYSQL_USERNAME = "spamback"
-MYSQL_PASSWORD = "spamback"
+from sqlalchemy.orm import relationship
 
 
 class Mail(DB.db.Model):
@@ -47,6 +43,7 @@ class Mail(DB.db.Model):
                    self.created_at
                )
 
+
 class MailAccount(DB.db.Model):
     __tablename__ = 'mail_account'
     id = Column(Integer, primary_key=True)
@@ -54,43 +51,39 @@ class MailAccount(DB.db.Model):
     password = Column(EncryptedType(String, 'HtfghhTT5565sk!#'))
     account_type_id = Column(Integer, ForeignKey("mail_account_type.id"), nullable=False)
     mail_boxes = Column(String(255), nullable=False)
-
+    account_type = relationship("MailAccountType", foreign_keys=[account_type_id])
 
     def __repr__(self):
         # str_created_at = self._created_at.strftime("%Y-%m-%d %H:%M:%S")
         return "<MailAccount (id='%s', " \
                "login='%s', " \
                "pass=%s" \
-               "type=%s" \
+               "type_id=%s" \
                ")>" % (
                    self._id
                    , self.login
                    , self.password
-                   , self.account_type
+                   , self.account_type_id
                )
 
-class MailAccountType(DB.db.Model):
 
+class MailAccountType(DB.db.Model):
     __tablename__ = 'mail_account_type'
     id = Column(Integer, primary_key=True)
     type = Column(Integer, nullable=False)
     host = Column(String(255))
-    account_type = Column(Integer)
 
     def __repr__(self):
         return "<MailAccountType " \
                "(" \
                "id='%s', " \
-               "login='%s', " \
-               "password=%s" \
                "type=%s" \
                ")>" % (
                    self._id,
-                   self.login,
-                   self.password,
-                   self.account_type
+                   self.type
                )
+
+
 def insert_mail(new_mail=None):
     DB.db.session.add(new_mail)
     DB.db.session.commit()
-
