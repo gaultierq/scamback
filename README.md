@@ -32,7 +32,7 @@
 http://127.0.0.1:5000/api/v1/auth/register?username=atanas&email=atanasster@gmail.com&password=xxxxxx
 
 2. POST
-http://127.0.0.1:5000/api/v1/auth/login?username=atanas&password=nasso
+http://127.0.0.1:5000/api/v1/auth/login?username=atanas&password=xxxxxx
 
 3. POST
 http://127.0.0.1:5000/api/v1/thread/add?title=new thread 2333&content=big content ffsdfdsfsd
