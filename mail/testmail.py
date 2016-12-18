@@ -12,22 +12,37 @@ ACCOUNTS = None
 
 GMAIL = 1
 
+STATUS_CREATED = 0
+STATUS_PROCESSING = 1
+
 if __name__ == '__main__':
     app.config.from_object(os.environ['APP_SETTINGS'])
     DB.init_db(app)
 
     # TODO: store it in db
     account_type = MailAccountType(type=GMAIL, host = 'imap.gmail.com')
-    account1 = MailAccount(id = 1, login = "jacob.carlsenis@gmail.com", password = "lEEDVBQw9INa", mail_boxes = "inbox")
-    account1.account_type = account_type
-    account2 = MailAccount(id = 2, login = "scam.scammers.back@gmail.com", password = "4wqPSyUIA3dB", mail_boxes = "inbox")
-    account2.account_type = account_type
-    ACCOUNTS = [account1, account2]
+
+    ACCOUNTS = [
+        MailAccount(
+            id=1, login="scam.scammers.back@gmail.com", password="4wqPSyUIA3dB", mail_boxes="inbox",
+            account_type=account_type),
+
+        MailAccount(id=2, login="jacob.carlsenis@gmail.com", password="lEEDVBQw9INa", mail_boxes="inbox",
+                    account_type=account_type
+                    )
+    ]
 
 
-def run():
-    # accounts = MailAccount.query.all()
+def create_new_thread(m):
+    return
 
+
+def add_message_on_scammer_mail(sm):
+    return
+
+
+def fetch():
+    print("feeding the email table")
     for account in ACCOUNTS:
         try:
             fetch_account(account)
@@ -35,6 +50,30 @@ def run():
             print("failed to fetch", account)
 
 
+def process():
+    print("processing new emails")
+    conn = None
+    # s = conn.execute(Mail.select(Mail.c.user == "test", for_update=True))
+    # u = conn.execute(Mail.update().where(Mail.c.user == "test), {"email": "foo"})
+    # conn.commit()
+    session = DB.db.session
+    user_mails = Mail.query.filter_by(status=STATUS_CREATED, account_id=1)  # TODO: update to processing
+    for um in user_mails:
+        try:
+            print("processing user mail: ", um)
+            create_new_thread(um)
+        except:
+            print("failure")
+    scammer_mails = Mail.query.filter_by(status=STATUS_CREATED, account_id=2)  # TODO: update to processing
+    for sm in scammer_mails:
+        try:
+            print("processing scammer mail: ", sm)
+            add_message_on_scammer_mail(sm)
+        except:
+            print("failure")
+
+
+# take the emails into the database. save headers
 def fetch_account(account):
     print("fetching", account)
     mail = imaplib.IMAP4_SSL(account.account_type.host)
@@ -52,10 +91,10 @@ def fetch_account(account):
         raw_email = data[0][1]  # here's the body, which is raw text of the whole email
         # including headers and alternate payloads
         # print "email", raw_email
-        print(raw_email)
+        # print(raw_email)
         email_message = email.message_from_bytes(raw_email)
 
-        # print "all headers=", email_message.items()  # print all headers
+        print("all headers=", email_message.items()) # print all headers
 
         date_str = email_message['Date']
         date = None
@@ -72,10 +111,9 @@ def fetch_account(account):
             in_reply_to=(email_message['In-Reply-To']),
             references=email_message['References'],  # probably gmail specific
             date=date,
-            body=readBody(email_message)
+            body=readBody(email_message),
+            account_id = account.id
         )
-        # print m
-        # print "\n"
 
         insert_mail(m)
 
@@ -93,4 +131,7 @@ def readBody(email_message):
 
 
 if __name__ == '__main__':
-    run()
+    # run()
+    # fetch()
+
+    process()
