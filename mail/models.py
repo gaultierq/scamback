@@ -1,14 +1,10 @@
-from sqlalchemy import Column, Integer, UnicodeText,String, DateTime,ForeignKey
+from sqlalchemy import Column, Integer, UnicodeText, String, DateTime, ForeignKey
 from sqlalchemy_utils import EncryptedType
 from database import DB
 import datetime
 
 from datetime import datetime
-
-MYSQL_HOST = "localhost"
-MYSQL_DATABASENAME = "spamback"
-MYSQL_USERNAME = "spamback"
-MYSQL_PASSWORD = "spamback"
+from sqlalchemy.orm import relationship
 
 
 class Mail(DB.db.Model):
@@ -24,6 +20,9 @@ class Mail(DB.db.Model):
     body = Column(UnicodeText)
     references = Column(UnicodeText)
     created_at = Column(DateTime, default=datetime.utcnow)
+    account_id = Column(Integer)
+    thread_id = Column(Integer)
+    status = Column(Integer, default=0)
 
     def __repr__(self):
         # str_created_at = self._created_at.strftime("%Y-%m-%d %H:%M:%S")
@@ -35,7 +34,9 @@ class Mail(DB.db.Model):
                "to=%s, " \
                "delivered_to=%s, " \
                "date=%s, " \
-               "created_at=%s" \
+               "created_at=%s, " \
+               "account_id=%s, " \
+               "thread_id=%s, " \
                ")>" % (
                    self.id,
                    self.uuid,
@@ -44,8 +45,11 @@ class Mail(DB.db.Model):
                    self.to,
                    self.delivered_to,
                    self.date,
-                   self.created_at
+                   self.created_at,
+                   self.account_id,
+                   self.thread_id
                )
+
 
 class MailAccount(DB.db.Model):
     __tablename__ = 'mail_account'
@@ -54,43 +58,39 @@ class MailAccount(DB.db.Model):
     password = Column(EncryptedType(String, 'HtfghhTT5565sk!#'))
     account_type_id = Column(Integer, ForeignKey("mail_account_type.id"), nullable=False)
     mail_boxes = Column(String(255), nullable=False)
-
+    account_type = relationship("MailAccountType", foreign_keys=[account_type_id])
 
     def __repr__(self):
         # str_created_at = self._created_at.strftime("%Y-%m-%d %H:%M:%S")
         return "<MailAccount (id='%s', " \
                "login='%s', " \
-               "pass=%s" \
-               "type=%s" \
+               "pass=%s, " \
+               "type_id=%s" \
                ")>" % (
-                   self._id
+                   self.id
                    , self.login
                    , self.password
-                   , self.account_type
+                   , self.account_type_id
                )
 
-class MailAccountType(DB.db.Model):
 
+class MailAccountType(DB.db.Model):
     __tablename__ = 'mail_account_type'
     id = Column(Integer, primary_key=True)
     type = Column(Integer, nullable=False)
     host = Column(String(255))
-    account_type = Column(Integer)
 
     def __repr__(self):
         return "<MailAccountType " \
                "(" \
                "id='%s', " \
-               "login='%s', " \
-               "password=%s" \
                "type=%s" \
                ")>" % (
                    self._id,
-                   self.login,
-                   self.password,
-                   self.account_type
+                   self.type
                )
+
+
 def insert_mail(new_mail=None):
     DB.db.session.add(new_mail)
     DB.db.session.commit()
-
