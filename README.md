@@ -1,17 +1,17 @@
 # scamback
 
-Database:
-MySQL: samback
-user: samback
-password: samback
- config.py ->> SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://samback:samback@localhost/samback’
+<h4>Database:</h4>
+<p>MySQL: samback</p>
+<p>user: samback</p>
+<p>password: samback</p>
+<p>config.py ->> SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://samback:samback@localhost/samback’</p>
 
 
 
-Database migrations:
-python manage.py db init
-python manage.py db migrate
-python manage.py db upgrade
+<h4>Database migrations:</h4>
+<p>python manage.py db init</p>
+<p>python manage.py db migrate</p>
+<p>python manage.py db upgrade</p>
 
 
 1. POST
