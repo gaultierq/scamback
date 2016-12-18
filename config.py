@@ -10,7 +10,7 @@ class Config(object):
 
 class ProductionConfig(Config):
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://scamback:scamback@atanasster.mysql.pythonanywhere-services.com/samback'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://atanasster:scamback@atanasster.mysql.pythonanywhere-services.com/samback'
 
 
 
