@@ -20,7 +20,7 @@ http://127.0.0.1:5000/api/v1/auth/register?username=atanas&email=atanasster@gmai
 2. POST
 http://127.0.0.1:5000/api/v1/auth/login?username=atanas&password=nasso
 
-3.POST
+3. POST
 http://127.0.0.1:5000/api/v1/thread/add?title=new thread 2333&content=big content ffsdfdsfsd
 
 4. GET
