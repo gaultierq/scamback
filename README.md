@@ -14,6 +14,7 @@
 <p>python manage.py db upgrade</p>
 
 
+<h4>REST API</h4>
 1. POST
 http://127.0.0.1:5000/api/v1/auth/register?username=atanas&email=atanasster@gmail.com&password=xxxxxx
 
