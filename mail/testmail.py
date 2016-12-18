@@ -33,12 +33,6 @@ if __name__ == '__main__':
     ]
 
 
-def create_new_thread(m):
-    return
-
-
-def add_message_on_scammer_mail(sm):
-    return
 
 
 def fetch():
@@ -61,16 +55,35 @@ def process():
     for um in user_mails:
         try:
             print("processing user mail: ", um)
-            create_new_thread(um)
+
+            # TODO 1. parse the body and retrieve the scammer email, and 1st scam body
+
+            # TODO 2. start a new thread, using thre retrieved body as first message
+
+            # TODO 3. mark as processed ok/ko
         except:
             print("failure")
+
     scammer_mails = Mail.query.filter_by(status=STATUS_CREATED, account_id=2)  # TODO: update to processing
     for sm in scammer_mails:
         try:
             print("processing scammer mail: ", sm)
-            add_message_on_scammer_mail(sm)
+            # TODO 4. find and set the mail-threadId: use in-reply-to to find the right thread-id
+
+            # TODO 5. find and set the mail-threadId: use in-reply-to to find the right thread-id
+
+            # TODO 6. add the scammer message to the thread (using TODO2)
+
         except:
             print("failure")
+
+    # TODO 7. process the message table,
+            # select which message should be sent to scammer
+            # convert the message in a mail, and insert it in the mail table (status = PENDING_SEND)
+
+    # TODO 8. send the emails
+
+
 
 
 # take the emails into the database. save headers
@@ -86,36 +99,42 @@ def fetch_account(account):
     # print("ids=", ids)
     id_list = ids.split()  # ids is a space separated string
     for num in id_list:
-        result, data = mail.fetch(num, "(RFC822)")  # fetch the email body (RFC822) for the given ID
+        try:
+            result, data = mail.fetch(num, "(RFC822)")  # fetch the email body (RFC822) for the given ID
 
-        raw_email = data[0][1]  # here's the body, which is raw text of the whole email
-        # including headers and alternate payloads
-        # print "email", raw_email
-        # print(raw_email)
-        email_message = email.message_from_bytes(raw_email)
+            raw_email = data[0][1]  # here's the body, which is raw text of the whole email
+            # including headers and alternate payloads
+            # print "email", raw_email
+            # print(raw_email)
+            email_message = email.message_from_bytes(raw_email)
 
-        print("all headers=", email_message.items()) # print all headers
+            print("all headers=", email_message.items()) # print all headers
 
-        date_str = email_message['Date']
-        date = None
-        if date_str:
-            date_tuple = email.utils.parsedate_tz(date_str)
-            if date_tuple:
-                date = datetime.datetime.fromtimestamp(email.utils.mktime_tz(date_tuple))
+            date_str = email_message['Date']
+            date = None
+            if date_str:
+                date_tuple = email.utils.parsedate_tz(date_str)
+                if date_tuple:
+                    date = datetime.datetime.fromtimestamp(email.utils.mktime_tz(date_tuple))
 
-        m = Mail(
-            uuid=(email_message['Message-ID']),
-            subject=(email_message['Subject']),
-            from_=(email_message['From']),
-            to=(email_message['To']),
-            in_reply_to=(email_message['In-Reply-To']),
-            references=email_message['References'],  # probably gmail specific
-            date=date,
-            body=readBody(email_message),
-            account_id = account.id
-        )
+            m = Mail(
+                uuid=(email_message['Message-ID']),
+                subject=(email_message['Subject']),
+                from_=(email_message['From']),
+                to=(email_message['To']),
+                in_reply_to=(email_message['In-Reply-To']),
+                references=email_message['References'],  # probably gmail specific
+                date=date,
+                body=readBody(email_message),
+                account_id = account.id
+            )
 
-        insert_mail(m)
+            insert_mail(m)
+
+            #TODO: move email to other mailbox
+        except:
+            print("error while fetching message")
+
 
 
 def readBody(email_message):
