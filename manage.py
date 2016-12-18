@@ -7,6 +7,7 @@ from database import DB
 from users.models import User
 from threads.models import Thread,ThreadLike
 from answers.models import Answer,AnswerLike
+from mail.models import Mail,MailAccount,MailAccountType
 
 app.config.from_object(os.environ['APP_SETTINGS'])
 
