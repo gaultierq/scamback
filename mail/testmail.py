@@ -1,13 +1,21 @@
 # MAIL_SERVER = "pop.gmail.com"
 import datetime
+import os
 
 MAIL_USER = "jacob.carlsenis@gmail.com"
 MAIL_PASSWORD = "lEEDVBQw9INa"
 
 import email.header
 import imaplib
+from app import app
+from database import DB
 
-from .models import Mail,insert_mail
+if __name__ == '__main__':
+    app.config.from_object(os.environ['APP_SETTINGS'])
+    DB.init_db(app)
+
+
+from models import Mail,insert_mail
 
 mail = imaplib.IMAP4_SSL('imap.gmail.com')
 mail.login(MAIL_USER, MAIL_PASSWORD)
@@ -41,8 +49,8 @@ def run():
         raw_email = data[0][1]  # here's the body, which is raw text of the whole email
         # including headers and alternate payloads
         # print "email", raw_email
-
-        email_message = email.message_from_string(raw_email)
+        print(raw_email)
+        email_message = email.message_from_bytes(raw_email)
 
         # print "all headers=", email_message.items()  # print all headers
 
