@@ -58,7 +58,7 @@ def list_thread():
 
 @app.route('/api/v1/thread/popular',methods=['GET'])
 def popular_thread():
-    threads = Thread.query.filter(Thread.content.contains('top')).limit(3).all()
+    threads = Thread.query.outerjoin(Answer).group_by(Thread.id).order_by(DB.db.func.count(Answer.id).desc()).limit(3).all()
     return jsonify([t.toJSON() for t in threads])
 
 @app.route('/api/v1/thread/like',methods=['POST'])
