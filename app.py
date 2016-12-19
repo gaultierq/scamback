@@ -3,7 +3,9 @@ if not 'APP_SETTINGS' in os.environ:
     os.environ['APP_SETTINGS'] = 'config.ProductionConfig'
 
 from flask import Flask,jsonify, abort, request
+from flask_cors import CORS, cross_origin
 app = Flask(__name__)
+CORS(app)
 app.config.from_object(os.environ['APP_SETTINGS'])
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 from database import DB
