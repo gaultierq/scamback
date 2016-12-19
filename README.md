@@ -52,4 +52,6 @@ http://127.0.0.1:5000/api/v1/answer/add?content=This is a funny answer&thread_id
 8. POST
 http://127.0.0.1:5000/api/v1/answer/like?assnswer_id=1&user_id=5
 
+9. GET
+http://127.0.0.1:5000/api/v1/answer/get?thread_id=1
 
