@@ -23,7 +23,10 @@ class Thread(DB.db.Model):
         return {'id':self.id,
                 'title': self.title,
                 'content': self.content,
-                'num_likes':self.num_likes}
+                'num_likes':self.num_likes,
+                'created': self.created,
+                'edited': self.edited
+                }
 
 
 class ThreadLike(DB.db.Model):
@@ -44,4 +47,4 @@ class ThreadLike(DB.db.Model):
 
     def toJSON(self):
         return {'thread': self.thread.toJSON() if self.thread else None ,
-                 'user': self.user.toJSON() if self.user else None }
+                 'user': self.user.toJSON() if self.user else None}
