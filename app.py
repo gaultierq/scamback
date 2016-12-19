@@ -93,5 +93,12 @@ def like_answer():
     DB.db.session.commit()
     return jsonify(like.toJSON())
 
+@app.route('/api/v1/answer/get',methods=['GET'])
+def get_answers():
+    if not 'thread_id' in request.args:
+        return jsonify({'error': 'thread_id is required'}), 400
+    answers = Answer.query.filter_by(thread_id=request.args.get('thread_id')).order_by(Answer.created.desc()).all()
+    return jsonify([t.toJSON() for t in answers])
+
 if __name__ == '__main__':
     app.run()

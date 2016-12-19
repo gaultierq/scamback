@@ -27,7 +27,9 @@ class Answer(DB.db.Model):
         return {'id':self.id,
                 'content': self.content,
                 'num_likes':self.num_likes,
-                'thread': self.thread.toJSON() if self.thread else None,
+                'created': self.created,
+                'edited': self.edited,
+                'thread_id': self.thread_id,
                  'user': self.user.toJSON() if self.user else None}
 
 
