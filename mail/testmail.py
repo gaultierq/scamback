@@ -51,6 +51,8 @@ def process():
     # u = conn.execute(Mail.update().where(Mail.c.user == "test), {"email": "foo"})
     # conn.commit()
     session = DB.db.session
+
+
     user_mails = Mail.query.filter_by(status=STATUS_CREATED, account_id=1)  # TODO: update to processing
     for um in user_mails:
         try:
@@ -83,7 +85,46 @@ def process():
 
     # TODO 8. send the emails
 
+# TODO list
+# add last_processing date on email resource
 
+# funcion1: process_mail
+# process the new emails, and create the thread, messages
+# 1. take next CREATED -> PROCESSING (order by email_sent_date asc)
+# A: if from user_email  accounts
+#       a. parse the scammer email from the body
+#               except: -> FAIL_READ_PARSE_EMAIL
+#       b. parse the boddy message
+#                     except: -> FAIL_READ_ORIGINAL_MESSAGE
+#
+#       c. create a new thread
+#
+# B: if from scam accounts
+#       a. retrieve the threadID
+#           use: in-reply-to field
+#                 use-case: answering yourself (scammer, or user)
+#                   trust the sent-date (and the ordering)
+#                   nb: the mail thread is a tree, not a chain
+#                   except: -> NO_PARENT , giving a chance to re-process them later on
+#
+# 2. (threadId, email)
+#   a. parse latest message body, create a message, add it to the thread
+#   b. setThreadId on email &  -> PROCESSED_OK
+
+
+# funcion2:
+# process_no_parent: give a chance to retrieve the borken email chain
+
+# function3:
+# create new emails to be sent
+# source1: process the thread/message table, get the closed bid. create an email to be sent to scammer
+# opt. source2: (later) user who create new threads.
+# opt. source3: (uers who subscribed)
+
+
+# function4: add pending emails
+# send emails marked as PENDING
+# NB: obtain the messageId after the message is sent, and update the table
 
 
 # take the emails into the database. save headers
