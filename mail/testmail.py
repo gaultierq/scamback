@@ -5,22 +5,18 @@ import email.header
 import imaplib
 from app import app
 from database import DB
-from mail.models import Mail, MailAccount, MailAccountType, insert_mail
-
+from mail.models import Mail, MailAccount, MailAccountType, insert_mail, MailStatus
 
 ACCOUNTS = None
 
 GMAIL = 1
-
-STATUS_CREATED = 0
-STATUS_PROCESSING = 1
 
 if __name__ == '__main__':
     app.config.from_object(os.environ['APP_SETTINGS'])
     DB.init_db(app)
 
     # TODO: store it in db
-    account_type = MailAccountType(type=GMAIL, host = 'imap.gmail.com')
+    account_type = MailAccountType(type=GMAIL, host='imap.gmail.com')
 
     ACCOUNTS = [
         MailAccount(
@@ -31,8 +27,6 @@ if __name__ == '__main__':
                     account_type=account_type
                     )
     ]
-
-
 
 
 def fetch():
@@ -46,44 +40,46 @@ def fetch():
 
 def process():
     print("processing new emails")
-    conn = None
-    # s = conn.execute(Mail.select(Mail.c.user == "test", for_update=True))
-    # u = conn.execute(Mail.update().where(Mail.c.user == "test), {"email": "foo"})
-    # conn.commit()
+
+    # .order_by(Mail.created_at.desc())
+    # mails = Mail.query.filter_by(status=MailStatus.CREATED).with_for_update(read=True, nowait=True, of=Mail)
+
     session = DB.db.session
 
+    empty=True
 
-    user_mails = Mail.query.filter_by(status=STATUS_CREATED, account_id=1)  # TODO: update to processing
-    for um in user_mails:
-        try:
-            print("processing user mail: ", um)
+    for loop in range(1000):
+        print("loop", loop)
+        m = Mail.query.filter_by(status=MailStatus.CREATED).first()
+        if m is None:
+            break
+        empty=False
+        print("processing mail: ", m)
+        m.status = MailStatus.PROCESSING
+        session.commit()
 
-            # TODO 1. parse the body and retrieve the scammer email, and 1st scam body
 
-            # TODO 2. start a new thread, using thre retrieved body as first message
+    session.commit()
+    print("loop", loop)
+    if loop != 1000 -1 and not empty:
+        assert not process()
 
-            # TODO 3. mark as processed ok/ko
-        except:
-            print("failure")
 
-    scammer_mails = Mail.query.filter_by(status=STATUS_CREATED, account_id=2)  # TODO: update to processing
-    for sm in scammer_mails:
-        try:
-            print("processing scammer mail: ", sm)
-            # TODO 4. find and set the mail-threadId: use in-reply-to to find the right thread-id
+    return not empty
+    # for m in mails:
+    #     try:
+    #         m.status = MailStatus.PROCESSING;
+    #         DB.db.session.commit()
+    #
+    #         print("processing mail: ", m)
+    #         m.status = MailStatus.PROCESSES_OK;
+    #     except:
+    #         print("failure")
+    #         m.status = MailStatus.PROCESSED_KO;
+    #
+    #     finally:
+    #         DB.db.session.commit()
 
-            # TODO 5. find and set the mail-threadId: use in-reply-to to find the right thread-id
-
-            # TODO 6. add the scammer message to the thread (using TODO2)
-
-        except:
-            print("failure")
-
-    # TODO 7. process the message table,
-            # select which message should be sent to scammer
-            # convert the message in a mail, and insert it in the mail table (status = PENDING_SEND)
-
-    # TODO 8. send the emails
 
 # TODO list
 # add last_processing date on email resource
@@ -149,7 +145,7 @@ def fetch_account(account):
             # print(raw_email)
             email_message = email.message_from_bytes(raw_email)
 
-            print("all headers=", email_message.items()) # print all headers
+            print("all headers=", email_message.items())  # print all headers
 
             date_str = email_message['Date']
             date = None
@@ -167,15 +163,14 @@ def fetch_account(account):
                 references=email_message['References'],  # probably gmail specific
                 date=date,
                 body=readBody(email_message),
-                account_id = account.id
+                account_id=account.id
             )
 
             insert_mail(m)
 
-            #TODO: move email to other mailbox
+            # TODO: move email to other mailbox
         except:
             print("error while fetching message")
-
 
 
 def readBody(email_message):

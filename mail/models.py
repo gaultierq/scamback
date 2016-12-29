@@ -1,3 +1,5 @@
+from enum import Enum
+
 from sqlalchemy import Column, Integer, UnicodeText, String, DateTime, ForeignKey
 from sqlalchemy_utils import EncryptedType
 from database import DB
@@ -5,6 +7,16 @@ import datetime
 
 from datetime import datetime
 from sqlalchemy.orm import relationship
+
+# MAIL_STATUS
+CREATED=0
+PROCESSED_OK=0
+
+class MailStatus:
+    CREATED = 0
+    PROCESSING = 1
+    PROCESSED_OK = 2
+    PROCESSED_KO = 3
 
 
 class Mail(DB.db.Model):
