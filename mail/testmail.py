@@ -3,9 +3,11 @@ import datetime
 import os
 import email.header
 import imaplib
+
 from app import app
 from database import DB
 from mail.models import Mail, MailAccount, MailAccountType, insert_mail, MailStatus
+from threads.models import Thread
 
 ACCOUNTS = None
 
@@ -19,10 +21,12 @@ if __name__ == '__main__':
     account_type = MailAccountType(type=GMAIL, host='imap.gmail.com')
 
     ACCOUNTS = [
+        # user_account
         MailAccount(
             id=1, login="scam.scammers.back@gmail.com", password="4wqPSyUIA3dB", mail_boxes="inbox",
             account_type=account_type),
 
+        # scammer_account
         MailAccount(id=2, login="jacob.carlsenis@gmail.com", password="lEEDVBQw9INa", mail_boxes="inbox",
                     account_type=account_type
                     )
@@ -38,55 +42,43 @@ def fetch():
             print("failed to fetch", account)
 
 
-def process():
-    print("processing new emails")
+# process the new emails, and create the thread, messages
+# 1. take next CREATED -> PROCESSING (order by email_sent_date asc)
 
-    # .order_by(Mail.created_at.desc())
-    # mails = Mail.query.filter_by(status=MailStatus.CREATED).with_for_update(read=True, nowait=True, of=Mail)
+#
+# 2. (threadId, email)
+#   a. parse latest message body, create a message, add it to the thread
+#   b. setThreadId on email &  -> PROCESSED_OK
+def process():
+    print("processing created emails")
 
     session = DB.db.session
 
-    empty=True
+    empty = True
+    new_emails = Mail.query.filter_by(status=MailStatus.CREATED).all()
 
-    for loop in range(1000):
-        print("loop", loop)
-        m = Mail.query.filter_by(status=MailStatus.CREATED).first()
+    for m in new_emails:
+
         if m is None:
             break
-        empty=False
-        print("processing mail: ", m)
-        m.status = MailStatus.PROCESSING
-        session.commit()
 
+        try:
+            print("processing mail: ", m.id)
+            processed, ok = process_it(m)
 
-    session.commit()
-    print("loop", loop)
-    if loop != 1000 -1 and not empty:
-        assert not process()
+            empty &= not processed
+        except Exception as e:
+            m.status = MailStatus.PROCESSED_KO
+            print("uncaught exception for ", m.id, ":", e)
+        finally:
+            session.commit()
 
+    # if loop != 1000 - 1 and not empty:
+    #     assert not process()
 
     return not empty
-    # for m in mails:
-    #     try:
-    #         m.status = MailStatus.PROCESSING;
-    #         DB.db.session.commit()
-    #
-    #         print("processing mail: ", m)
-    #         m.status = MailStatus.PROCESSES_OK;
-    #     except:
-    #         print("failure")
-    #         m.status = MailStatus.PROCESSED_KO;
-    #
-    #     finally:
-    #         DB.db.session.commit()
 
 
-# TODO list
-# add last_processing date on email resource
-
-# funcion1: process_mail
-# process the new emails, and create the thread, messages
-# 1. take next CREATED -> PROCESSING (order by email_sent_date asc)
 # A: if from user_email  accounts
 #       a. parse the scammer email from the body
 #               except: -> FAIL_READ_PARSE_EMAIL
@@ -102,25 +94,70 @@ def process():
 #                   trust the sent-date (and the ordering)
 #                   nb: the mail thread is a tree, not a chain
 #                   except: -> NO_PARENT , giving a chance to re-process them later on
-#
-# 2. (threadId, email)
-#   a. parse latest message body, create a message, add it to the thread
-#   b. setThreadId on email &  -> PROCESSED_OK
 
+
+def parse_scammer_mail(m):
+    scammer_email = "placeholder@xyz.com"
+    original_scammer_message = "placeholder body"
+    title = "placeholder title"
+    return scammer_email, title, original_scammer_message
+
+
+def process_it(m: Mail):
+    processed, ok = False, False
+    if m.account_id == 1:
+        processed = True
+
+        m.status = MailStatus.PROCESSING
+        DB.db.session.commit()
+
+        email, title, content = parse_scammer_mail(m)
+        if email is None or content is None:
+            m.status = MailStatus.FAIL_PARSE_EMAIL
+            return
+
+        thread = Thread(title=title, content=content)
+        DB.db.session.add(thread)
+        DB.db.session.commit()
+        ok = True
+
+    elif m.account_id == 2:
+        pass
+    else:
+        raise Exception("unknown account id", m.account_id)
+
+    if processed:
+        if ok:
+            m.status = MailStatus.PROCESSED_OK
+        else:
+            m.status = MailStatus.PROCESSED_KO
+
+    DB.db.session.commit()
+    return processed, ok
+
+
+# add last_processing date on email resource
 
 # funcion2:
 # process_no_parent: give a chance to retrieve the borken email chain
+def process_no_parent():
+    pass
+
 
 # function3:
 # create new emails to be sent
 # source1: process the thread/message table, get the closed bid. create an email to be sent to scammer
 # opt. source2: (later) user who create new threads.
 # opt. source3: (uers who subscribed)
+def prepare_emails():
+    pass
 
 
 # function4: add pending emails
 # send emails marked as PENDING
 # NB: obtain the messageId after the message is sent, and update the table
+def send_pending_emails():
+    pass
 
 
 # take the emails into the database. save headers

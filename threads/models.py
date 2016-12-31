@@ -6,7 +6,7 @@ import datetime
 class Thread(DB.db.Model):
     __tablename__ = 'threads'
     id = Column(Integer, primary_key=True)
-    title = Column(Unicode(255), unique=True, nullable=False)
+    title = Column(Unicode(255), nullable=False)
     content = Column(UnicodeText, default=u'')
     created = Column(DateTime, default=datetime.datetime.utcnow)
     edited = Column(DateTime, default=datetime.datetime.utcnow)
