@@ -16,6 +16,7 @@ DB.init_db(app)
 from users.models import User
 from threads.models import Thread, ThreadLike
 from answers.models import Answer, AnswerLike
+from mail import mailprocessor
 
 
 @app.route('/api/v1/auth/register', methods=['POST'])
@@ -112,9 +113,13 @@ def get_answers():
 
 @app.route('/api/v1/mail/process', methods=['POST'])
 def process_emails():
-    from mail import testmail
-    processed = testmail.process()
+    processed = mailprocessor.process()
     return "processed=" + str(processed)
+
+@app.route('/api/v1/mail/fetch', methods=['POST'])
+def fetch_emails():
+    mailprocessor.fetch()
+    return "fetched"
 
 
 if __name__ == '__main__':

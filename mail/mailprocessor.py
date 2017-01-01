@@ -8,29 +8,31 @@ from app import app
 from database import DB
 from mail.models import Mail, MailAccount, MailAccountType, insert_mail, MailStatus
 from threads.models import Thread
-
-ACCOUNTS = None
+from mail import utils
 
 GMAIL = 1
+persist = True
 
 if __name__ == '__main__':
     app.config.from_object(os.environ['APP_SETTINGS'])
     DB.init_db(app)
+    persist=False
 
-    # TODO: store it in db
-    account_type = MailAccountType(type=GMAIL, host='imap.gmail.com')
 
-    ACCOUNTS = [
-        # user_account
-        MailAccount(
-            id=1, login="scam.scammers.back@gmail.com", password="4wqPSyUIA3dB", mail_boxes="inbox",
-            account_type=account_type),
+# TODO: store it in db
+account_type = MailAccountType(type=GMAIL, host='imap.gmail.com')
 
-        # scammer_account
-        MailAccount(id=2, login="jacob.carlsenis@gmail.com", password="lEEDVBQw9INa", mail_boxes="inbox",
-                    account_type=account_type
-                    )
-    ]
+ACCOUNTS = [
+    # user_account
+    MailAccount(
+        id=1, login="scam.scammers.back@gmail.com", password="4wqPSyUIA3dB", mail_boxes="inbox",
+        account_type=account_type),
+
+    # scammer_account
+    MailAccount(id=2, login="jacob.carlsenis@gmail.com", password="lEEDVBQw9INa", mail_boxes="inbox",
+                account_type=account_type
+                )
+]
 
 
 def fetch():
@@ -53,7 +55,6 @@ def process():
     print("processing created emails")
 
     session = DB.db.session
-
     empty = True
     new_emails = Mail.query.filter_by(status=MailStatus.CREATED).all()
 
@@ -61,20 +62,17 @@ def process():
 
         if m is None:
             break
-
         try:
             print("processing mail: ", m.id)
             processed, ok = process_it(m)
-
             empty &= not processed
         except Exception as e:
             m.status = MailStatus.PROCESSED_KO
             print("uncaught exception for ", m.id, ":", e)
+            session.rollback()
+            raise
         finally:
             session.commit()
-
-    # if loop != 1000 - 1 and not empty:
-    #     assert not process()
 
     return not empty
 
@@ -97,10 +95,10 @@ def process():
 
 
 def parse_scammer_mail(m):
-    scammer_email = "placeholder@xyz.com"
-    original_scammer_message = "placeholder body"
-    title = "placeholder title"
-    return scammer_email, title, original_scammer_message
+
+    sender, message = utils.parse_forwarded_message(m.body)
+    scammer_name, scammer_email = utils.parse_email_address(sender)
+    return scammer_name, scammer_email, m.subject, message
 
 
 def process_it(m: Mail):
@@ -111,7 +109,8 @@ def process_it(m: Mail):
         m.status = MailStatus.PROCESSING
         DB.db.session.commit()
 
-        email, title, content = parse_scammer_mail(m)
+        name, email, title, content = parse_scammer_mail(m)
+
         if email is None or content is None:
             m.status = MailStatus.FAIL_PARSE_EMAIL
             return
@@ -177,10 +176,13 @@ def fetch_account(account):
             result, data = mail.fetch(num, "(RFC822)")  # fetch the email body (RFC822) for the given ID
 
             raw_email = data[0][1]  # here's the body, which is raw text of the whole email
-            # including headers and alternate payloads
-            # print "email", raw_email
-            # print(raw_email)
             email_message = email.message_from_bytes(raw_email)
+
+            body = read_body(email_message)
+            if body is None:
+                print("not supoprted")
+                return
+
 
             print("all headers=", email_message.items())  # print all headers
 
@@ -199,7 +201,7 @@ def fetch_account(account):
                 in_reply_to=(email_message['In-Reply-To']),
                 references=email_message['References'],  # probably gmail specific
                 date=date,
-                body=readBody(email_message),
+                body=body,
                 account_id=account.id
             )
 
@@ -210,16 +212,30 @@ def fetch_account(account):
             print("error while fetching message")
 
 
-def readBody(email_message):
-    body = None
+def read_body(email_message):
     if email_message.is_multipart():
-        for payload in email_message.get_payload():
-            # if payload.is_multipart(): ...
-            body = payload.get_payload()
-    else:
-        body = email_message.get_payload()
+        for part in email_message.walk():
+            if part.get_content_type() == "text/plain":
+                body = part.get_payload(
+                    decode=True)  # to control automatic email-style MIME decoding (e.g., Base64, uuencode, quoted-printable)
+                body = body.decode()
+                break;
 
+            elif part.get_content_type() == "text/html":
+                continue
     return body
+
+
+# def readBody(email_message):
+#     body = None
+#     if email_message.is_multipart():
+#         for payload in email_message.get_payload():
+#             # if payload.is_multipart(): ...
+#             body = payload.get_payload()
+#     else:
+#         body = email_message.get_payload()
+#
+#     return body
 
 
 if __name__ == '__main__':
