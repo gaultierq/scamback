@@ -18,11 +18,13 @@ class MailStatus:
     PROCESSED_OK = 2
     PROCESSED_KO = 3
     FAIL_PARSE_EMAIL = 4
+    FAIL_ATTACH = 5
 
 
 class Mail(DB.db.Model):
     __tablename__ = 'mail'
     id = Column(Integer, primary_key=True)
+    # uuid will be true eventually
     uuid = Column(String(255), unique=False, nullable=False)
     subject = Column(String(2000))
     from_ = Column(String(255))

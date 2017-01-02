@@ -34,6 +34,11 @@ ACCOUNTS = [
                 )
 ]
 
+# user --->  mail1
+# processing
+# mail2 --> scammer
+# scammer --> mail2
+# etc
 
 def fetch():
     print("feeding the email table")
@@ -64,8 +69,9 @@ def process():
             break
         try:
             print("processing mail: ", m.id)
-            processed, ok = process_it(m)
-            empty &= not processed
+            process_it(m)
+
+            empty = False
         except Exception as e:
             m.status = MailStatus.PROCESSED_KO
             print("uncaught exception for ", m.id, ":", e)
@@ -75,6 +81,12 @@ def process():
             session.commit()
 
     return not empty
+
+
+def parse_scammer_mail(m):
+    sender, message = utils.parse_forwarded_message(m.body)
+    scammer_name, scammer_email = utils.parse_email_address(sender)
+    return scammer_name, scammer_email, m.subject, message
 
 
 # A: if from user_email  accounts
@@ -90,49 +102,66 @@ def process():
 #           use: in-reply-to field
 #                 use-case: answering yourself (scammer, or user)
 #                   trust the sent-date (and the ordering)
-#                   nb: the mail thread is a tree, not a chain
+#                   think of the mail thread as a tree, not a chain
 #                   except: -> NO_PARENT , giving a chance to re-process them later on
 
+def retrieve_thread_id(email: Mail):
+    if email.thread_id:
+        return
 
-def parse_scammer_mail(m):
+    inreplyto = email.in_reply_to
 
-    sender, message = utils.parse_forwarded_message(m.body)
-    scammer_name, scammer_email = utils.parse_email_address(sender)
-    return scammer_name, scammer_email, m.subject, message
+    if not inreplyto:
+        email.status = MailStatus.FAIL_ATTACH
+        return
+
+    mails = Mail.query.filter_by(uuid=inreplyto).order_by(Mail.created_at.desc()).all()
+
+    for m in mails:
+        if m is not None and m.thread_id is not None:
+            email.thread_id = m.thread_id
+            break
+    if not m.thread_id:
+        email.status = MailStatus.FAIL_ATTACH
 
 
 def process_it(m: Mail):
-    processed, ok = False, False
-    if m.account_id == 1:
-        processed = True
+    m.status = MailStatus.PROCESSING
+    DB.db.session.commit()
 
-        m.status = MailStatus.PROCESSING
-        DB.db.session.commit()
+    try:
 
-        name, email, title, content = parse_scammer_mail(m)
+        if m.account_id == 1:
 
-        if email is None or content is None:
-            m.status = MailStatus.FAIL_PARSE_EMAIL
-            return
+            name, em, title, content = parse_scammer_mail(m)
 
-        thread = Thread(title=title, content=content)
-        DB.db.session.add(thread)
-        DB.db.session.commit()
-        ok = True
+            if em is None or content is None:
+                m.status = MailStatus.FAIL_PARSE_EMAIL
+                return
 
-    elif m.account_id == 2:
-        pass
-    else:
-        raise Exception("unknown account id", m.account_id)
+            thread = Thread(title=title, content=content)
+            DB.db.session.add(thread)
+            DB.db.session.commit()
 
-    if processed:
-        if ok:
+            m.thread_id = thread.id
+            m.status = MailStatus.PROCESSED_OK
+
+        elif m.account_id == 2:
+
+            if not m.thread_id:
+                m.thread_id = retrieve_thread_id(m)
+                if m.thread_id is None:
+                    m.status = MailStatus.FAIL_ATTACH
+                    return
+
             m.status = MailStatus.PROCESSED_OK
         else:
+            raise Exception("unknown account id", m.account_id)
+    finally:
+        if m.status == MailStatus.PROCESSING:
             m.status = MailStatus.PROCESSED_KO
 
-    DB.db.session.commit()
-    return processed, ok
+        DB.db.session.commit()
 
 
 # add last_processing date on email resource
@@ -213,29 +242,18 @@ def fetch_account(account):
 
 
 def read_body(email_message):
+    body = None
     if email_message.is_multipart():
         for part in email_message.walk():
             if part.get_content_type() == "text/plain":
                 body = part.get_payload(
                     decode=True)  # to control automatic email-style MIME decoding (e.g., Base64, uuencode, quoted-printable)
                 body = body.decode()
-                break;
+                break
 
             elif part.get_content_type() == "text/html":
                 continue
     return body
-
-
-# def readBody(email_message):
-#     body = None
-#     if email_message.is_multipart():
-#         for payload in email_message.get_payload():
-#             # if payload.is_multipart(): ...
-#             body = payload.get_payload()
-#     else:
-#         body = email_message.get_payload()
-#
-#     return body
 
 
 if __name__ == '__main__':
