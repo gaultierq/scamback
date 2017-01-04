@@ -94,6 +94,7 @@ class MailAccountType(DB.db.Model):
     id = Column(Integer, primary_key=True)
     type = Column(Integer, nullable=False)
     host = Column(String(255))
+    smtp_host = Column(String(255))
 
     def __repr__(self):
         return "<MailAccountType " \

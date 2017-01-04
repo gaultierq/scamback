@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
 
 # TODO: store it in db
-account_type = MailAccountType(type=GMAIL, host='imap.gmail.com')
+account_type = MailAccountType(type=GMAIL, host='imap.gmail.com', smtp_host='smtp.gmail.com:587')
 
 ACCOUNTS = [
     # user_account
@@ -30,6 +30,10 @@ ACCOUNTS = [
 
     # scammer_account
     MailAccount(id=2, login="jacob.carlsenis@gmail.com", password="lEEDVBQw9INa", mail_boxes="inbox",
+                account_type=account_type
+                ),
+    # scammer_account
+    MailAccount(id=3, login="scam.scammers.tras@gmail.com", password="qpn9B!cP@&oQ", mail_boxes="inbox",
                 account_type=account_type
                 )
 ]
@@ -189,7 +193,7 @@ def send_pending_emails():
 
 
 # take the emails into the database. save headers
-def fetch_account(account):
+def fetch_account(account: MailAccount):
     print("fetching", account)
     mail = imaplib.IMAP4_SSL(account.account_type.host)
     mail.login(account.login, account.password)
@@ -256,8 +260,40 @@ def read_body(email_message):
     return body
 
 
+def send():
+
+    account = ACCOUNTS[2]
+
+    import smtplib
+    from email.mime.text import MIMEText
+    server = smtplib.SMTP('smtp.gmail.com:587')
+
+    server.ehlo()
+    server.starttls()
+    server.login(account.login, account.password)
+
+    # Create a text/plain message
+    msg = MIMEText("test message")
+
+    me = "test@test.com"
+    you = "scam.scammers.tras@gmail.com"
+
+    msg['Subject'] = 'Just a first  %s' % 'test'
+    msg['From'] = me
+    msg['To'] = you
+
+    server.sendmail(me, [you], msg.as_string())
+    server.quit()
+
+
 if __name__ == '__main__':
     # run()
     # fetch()
+    # process()
+    send()
 
-    process()
+# next todo:
+# sent a test mail from main account
+# send a message by adding it to the mail table
+# change the thread / message model in order to close a bid and take a winner
+# send the winner message
