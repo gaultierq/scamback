@@ -9,8 +9,10 @@ from database import DB
 from mail.models import Mail, MailAccount, MailAccountType, insert_mail, MailStatus
 from threads.models import Thread
 from mail import utils
+import smtplib
+from email.mime.text import MIMEText
 
-GMAIL = 1
+
 persist = True
 
 if __name__ == '__main__':
@@ -19,24 +21,6 @@ if __name__ == '__main__':
     persist=False
 
 
-# TODO: store it in db
-account_type = MailAccountType(type=GMAIL, host='imap.gmail.com', smtp_host='smtp.gmail.com:587')
-
-ACCOUNTS = [
-    # user_account
-    MailAccount(
-        id=1, login="scam.scammers.back@gmail.com", password="4wqPSyUIA3dB", mail_boxes="inbox",
-        account_type=account_type),
-
-    # scammer_account
-    MailAccount(id=2, login="jacob.carlsenis@gmail.com", password="lEEDVBQw9INa", mail_boxes="inbox",
-                account_type=account_type
-                ),
-    # scammer_account
-    MailAccount(id=3, login="scam.scammers.tras@gmail.com", password="qpn9B!cP@&oQ", mail_boxes="inbox",
-                account_type=account_type
-                )
-]
 
 # user --->  mail1
 # processing
@@ -46,7 +30,9 @@ ACCOUNTS = [
 
 def fetch():
     print("feeding the email table")
-    for account in ACCOUNTS:
+    # not checked:
+    accounts = MailAccount.query.all()
+    for account in accounts:
         try:
             fetch_account(account)
         except:
@@ -260,37 +246,52 @@ def read_body(email_message):
     return body
 
 
-def send():
+def send_once():
+    email = Mail(
+        account_id=3,
+        from_="scam.scammers.tras@gmail.com",
+        to="scam.scammers.tras@gmail.com",
+        subject="another test",
+        body="the body"
+    )
+    send(email)
 
-    account = ACCOUNTS[2]
 
-    import smtplib
-    from email.mime.text import MIMEText
-    server = smtplib.SMTP('smtp.gmail.com:587')
+def send(mailToSend:Mail):
 
+    account = MailAccount.query.get(mailToSend.account_id)
+
+    if None in (account, account.account_type, account.account_type.smtp_host):
+        print("invalid account %s" % account)
+
+    if None in (mailToSend, mailToSend.from_, mailToSend.to, mailToSend.subject, mailToSend.body):
+        print("invalid email %s" % mailToSend)
+
+    print("connecting to %s" % account.account_type.smtp_host)
+    server = smtplib.SMTP(account.account_type.smtp_host)
     server.ehlo()
     server.starttls()
     server.login(account.login, account.password)
 
-    # Create a text/plain message
-    msg = MIMEText("test message")
+    msg = MIMEText(mailToSend.body)
+    msg['Subject'] = mailToSend.subject
+    msg['From'] = mailToSend.from_
+    msg['To'] = mailToSend.to
 
-    me = "test@test.com"
-    you = "scam.scammers.tras@gmail.com"
+    print("sending email %s" % mailToSend)
 
-    msg['Subject'] = 'Just a first  %s' % 'test'
-    msg['From'] = me
-    msg['To'] = you
-
-    server.sendmail(me, [you], msg.as_string())
+    server.sendmail(mailToSend.from_, [(mailToSend.to)], msg.as_string())
     server.quit()
+
+
 
 
 if __name__ == '__main__':
     # run()
     # fetch()
     # process()
-    send()
+    # initDB()
+    send_once()
 
 # next todo:
 # sent a test mail from main account

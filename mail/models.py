@@ -92,7 +92,7 @@ class MailAccount(DB.db.Model):
 class MailAccountType(DB.db.Model):
     __tablename__ = 'mail_account_type'
     id = Column(Integer, primary_key=True)
-    type = Column(Integer, nullable=False)
+    type = Column(Integer, unique=True, nullable=False)
     host = Column(String(255))
     smtp_host = Column(String(255))
 
@@ -102,7 +102,7 @@ class MailAccountType(DB.db.Model):
                "id='%s', " \
                "type=%s" \
                ")>" % (
-                   self._id,
+                   self.id,
                    self.type
                )
 
@@ -110,3 +110,35 @@ class MailAccountType(DB.db.Model):
 def insert_mail(new_mail=None):
     DB.db.session.add(new_mail)
     DB.db.session.commit()
+
+
+
+
+
+
+def initDB():
+    GMAIL = 1
+    account_type = MailAccountType(type=GMAIL, host='imap.gmail.com', smtp_host='smtp.gmail.com:587')
+
+    ACCOUNTS = [
+        # user_account
+        MailAccount(
+            id=1, login="scam.scammers.back@gmail.com", password="4wqPSyUIA3dB", mail_boxes="inbox",
+            account_type=account_type),
+
+        # scammer_account
+        MailAccount(id=2, login="jacob.carlsenis@gmail.com", password="lEEDVBQw9INa", mail_boxes="inbox",
+                    account_type=account_type
+                    ),
+        # scammer_account
+        MailAccount(id=3, login="scam.scammers.tras@gmail.com", password="qpn9B!cP@&oQ", mail_boxes="inbox",
+                    account_type=account_type
+                    )
+    ]
+
+    DB.db.session.add(account_type)
+    DB.db.session.commit()
+
+    for account in ACCOUNTS:
+        DB.db.session.add(account)
+        DB.db.session.commit()
