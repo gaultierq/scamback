@@ -246,18 +246,32 @@ def read_body(email_message):
     return body
 
 
-def send_once():
-    email = Mail(
-        account_id=3,
-        from_="scam.scammers.tras@gmail.com",
-        to="scam.scammers.tras@gmail.com",
-        subject="another test",
-        body="the body"
-    )
-    send(email)
+def process_send():
 
+    emails_to_send = Mail.query.filter_by(status=MailStatus.PENDING_SEND).all()
+
+    for m in emails_to_send:
+        m.status = MailStatus.PROCESSING
+        try:
+            send(m)
+            m.status = MailStatus.PROCESSED_OK
+        except:
+            m.status = MailStatus.PROCESSED_KO
+        finally:
+            m.query.session.commit()
+
+
+
+def postSend(mailToPost:Mail):
+    mailToPost.status = MailStatus.PENDING_SEND
+    mailToPost.uuid = email.utils.make_msgid()
+
+    DB.db.session.add(mailToPost)
+    DB.db.session.commit()
+    pass
 
 def send(mailToSend:Mail):
+    print("sending email %s" % mailToSend)
 
     account = MailAccount.query.get(mailToSend.account_id)
 
@@ -278,8 +292,6 @@ def send(mailToSend:Mail):
     msg['From'] = mailToSend.from_
     msg['To'] = mailToSend.to
 
-    print("sending email %s" % mailToSend)
-
     server.sendmail(mailToSend.from_, [(mailToSend.to)], msg.as_string())
     server.quit()
 
@@ -291,7 +303,22 @@ if __name__ == '__main__':
     # fetch()
     # process()
     # initDB()
-    send_once()
+
+    mail = Mail(
+        account_id=3,
+        from_="scam.scammers.tras@gmail.com",
+        to="scam.scammers.tras@gmail.com",
+        subject="another test",
+        body="the body"
+    )
+
+    process_send()
+
+    postSend(mail)
+
+    process_send()
+
+
 
 # next todo:
 # sent a test mail from main account

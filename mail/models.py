@@ -18,7 +18,8 @@ class MailStatus:
     PROCESSED_OK = 2
     PROCESSED_KO = 3
     FAIL_PARSE_EMAIL = 4
-    FAIL_ATTACH = 5
+    FAIL_ATTACH = 5,
+    PENDING_SEND = 6
 
 
 class Mail(DB.db.Model):
